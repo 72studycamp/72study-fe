@@ -9,25 +9,31 @@ interface StudentTableProps {
 
 export default function StudentTable({ students }: StudentTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCourse, setFilterCourse] = useState<string>('all');
   const [filterGrade, setFilterGrade] = useState<string>('all');
   const [filterGender, setFilterGender] = useState<string>('all');
 
+  const safeLower = (v?: string | null) => (v ?? '').toLowerCase();
+
   const filteredStudents = students.filter((student) => {
     const matchesSearch =
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.school.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.mentor.toLowerCase().includes(searchTerm.toLowerCase());
+      safeLower(student.name).includes(searchTerm.toLowerCase()) ||
+      safeLower(student.fullName).includes(searchTerm.toLowerCase()) ||
+      safeLower(student.school).includes(searchTerm.toLowerCase()) ||
+      safeLower(student.mentor).includes(searchTerm.toLowerCase());
 
-    const matchesCourse = filterCourse === 'all' || student.course === filterCourse;
     const matchesGrade = filterGrade === 'all' || student.grade === filterGrade;
     const matchesGender = filterGender === 'all' || student.gender === filterGender;
 
-    return matchesSearch && matchesCourse && matchesGrade && matchesGender;
+    return matchesSearch && matchesGrade && matchesGender;
   });
 
-  const uniqueGrades = Array.from(new Set(students.map((s) => s.grade))).sort();
+  const uniqueGrades = Array.from(new Set(students.map((s) => s.grade).filter(Boolean))).sort();
+
+  // ⚠️ Student 타입에 birthDate / teamNo 같은 필드가 없을 수 있어서 "안전하게" 처리
+  // - 백엔드에서 birthDate를 안 주면 화면에는 '-'로 표시됨
+  // - 조(team)은 teamNo / team / group 등 프로젝트마다 다를 수 있음 → 아래 우선순위로 표시
+  const getTeamLabel = (s: any) => s.teamNo ?? s.team ?? s.group ?? '-';
+  const getBirthDateLabel = (s: any) => s.birthDate ?? s.birthDateRaw ?? '-';
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
@@ -36,6 +42,7 @@ export default function StudentTable({ students }: StudentTableProps) {
           <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
             학생 목록 ({filteredStudents.length}명)
           </h2>
+
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
@@ -44,15 +51,7 @@ export default function StudentTable({ students }: StudentTableProps) {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             />
-            <select
-              value={filterCourse}
-              onChange={(e) => setFilterCourse(e.target.value)}
-              className="px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            >
-              <option value="all">전체 과정</option>
-              <option value="중등">중등</option>
-              <option value="고등">고등</option>
-            </select>
+
             <select
               value={filterGrade}
               onChange={(e) => setFilterGrade(e.target.value)}
@@ -65,6 +64,7 @@ export default function StudentTable({ students }: StudentTableProps) {
                 </option>
               ))}
             </select>
+
             <select
               value={filterGender}
               onChange={(e) => setFilterGender(e.target.value)}
@@ -78,9 +78,10 @@ export default function StudentTable({ students }: StudentTableProps) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* ✅ 내부 스크롤 + 헤더 고정 */}
+      <div className="relative max-h-[560px] overflow-y-auto overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-zinc-50 dark:bg-zinc-800">
+          <thead className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                 이름
@@ -89,52 +90,51 @@ export default function StudentTable({ students }: StudentTableProps) {
                 성별
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                학년
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                 멘토
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                방호조
+                방
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                나이
+                조
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                과정
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                학년
+                생년월일
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                 학교
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                이메일
-              </th>
             </tr>
           </thead>
+
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
             {filteredStudents.length === 0 ? (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={8}
                   className="px-6 py-12 text-center text-zinc-500 dark:text-zinc-400"
                 >
                   검색 결과가 없습니다.
                 </td>
               </tr>
             ) : (
-              filteredStudents.map((student) => (
+              filteredStudents.map((student: any) => (
                 <tr
                   key={student.id}
                   className="hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                      {student.name}
+                      {student.name || '-'}
                     </div>
                     <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                      {student.fullName}
+                      {student.fullName || '-'}
                     </div>
                   </td>
+
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -143,37 +143,32 @@ export default function StudentTable({ students }: StudentTableProps) {
                           : 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200'
                       }`}
                     >
-                      {student.gender}
+                      {student.gender || '-'}
                     </span>
                   </td>
+
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">
-                    {student.mentor}
+                    {student.grade || '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
-                    {student.roomGroup}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
-                    {student.age}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        student.course === '중등'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                      }`}
-                    >
-                      {student.course}
-                    </span>
-                  </td>
+
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">
-                    {student.grade}
+                    {student.mentor || student.mentorName || '-'}
                   </td>
+
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
+                    {student.roomGroup || student.roomNo || '-'}
+                  </td>
+
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
+                    {getTeamLabel(student)}
+                  </td>
+
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
+                    {getBirthDateLabel(student)}
+                  </td>
+
                   <td className="px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">
-                    {student.school}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
-                    {student.email || '-'}
+                    {student.school || '-'}
                   </td>
                 </tr>
               ))
@@ -184,4 +179,3 @@ export default function StudentTable({ students }: StudentTableProps) {
     </div>
   );
 }
-
