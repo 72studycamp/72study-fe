@@ -66,7 +66,8 @@ export default function Home() {
 
     const fetchData = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/applications`);
+        // const res = await fetch(`${API_BASE}/api/applications`);
+        const res = await fetch("/api/applications");
         if (!res.ok) throw new Error(`API error ${res.status}`);
 
         const apps = await res.json();
