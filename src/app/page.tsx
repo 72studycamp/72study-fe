@@ -119,10 +119,10 @@ export default function Home() {
 
       {summaryStats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div>정원 {summaryStats.totalQuota}</div>
-          <div>편성 {summaryStats.totalAssigned}</div>
-          <div>출석 {summaryStats.totalPresent}</div>
+          <div>총인원 {summaryStats.totalQuota}</div>
+          <div>현인원 {summaryStats.totalAssigned}</div>
           <div>외출 {summaryStats.totalAbsent}</div>
+          <div>외박 0</div>
         </div>
       )}
 
