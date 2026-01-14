@@ -1,47 +1,67 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-const BASE_URL = process.env.API_BASE_URL!;
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME!;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD!;
+const BACKEND = process.env.API_BASE_URL!;
+const USER = process.env.ADMIN_USERNAME!;
+const PASS = process.env.ADMIN_PASSWORD!;
 
-function basicAuthHeader() {
-  const token = Buffer.from(`${ADMIN_USERNAME}:${ADMIN_PASSWORD}`).toString('base64');
-  return `Basic ${token}`;
+function authHeader() {
+  const token = Buffer.from(`${USER}:${PASS}`).toString("base64");
+  return { Authorization: `Basic ${token}` };
+}
+
+async function safeJson(res: Response) {
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const qs = url.searchParams.toString();
-  const upstream = `${BASE_URL}/api/admin/students${qs ? `?${qs}` : ''}`;
 
-  const res = await fetch(upstream, {
-    method: 'GET',
-    headers: {
-      Authorization: basicAuthHeader(),
-    },
-    cache: 'no-store',
+  const res = await fetch(`${BACKEND}/api/admin/students${qs ? `?${qs}` : ""}`, {
+    method: "GET",
+    headers: { ...authHeader() }, // GET도 서버프록시면 붙여도 됨(안 붙여도 되면 빼도 OK)
   });
 
-  const text = await res.text();
+  if (!res.ok) {
+    const payload = await safeJson(res);
+    return NextResponse.json(
+      { message: payload ?? `HTTP ${res.status}` },
+      { status: res.status }
+    );
+  }
 
-  return new NextResponse(text, {
-    status: res.status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
-  });
+  const payload = await safeJson(res);
+  return NextResponse.json(payload ?? [], { status: res.status });
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.text();
-  const upstream = `${BASE_URL}/api/admin/students`;
+  const body = await req.json();
 
-  const res = await fetch(upstream, {
-    method: 'POST',
+  const res = await fetch(`${BACKEND}/api/admin/students`, {
+    method: "POST",
     headers: {
-      Authorization: basicAuthHeader(),
-      'Content-Type': 'application/json',
+      ...authHeader(),
+      "Content-Type": "application/json",
     },
-    body,
+    body: JSON.stringify(body),
   });
 
-  return new NextResponse(null, { status: res.status });
+  if (!res.ok) {
+    const payload = await safeJson(res);
+    return NextResponse.json(
+      { message: payload ?? `HTTP ${res.status}` },
+      { status: res.status }
+    );
+  }
+
+  if (res.status === 204) return new NextResponse(null, { status: 204 });
+
+  const payload = await safeJson(res);
+  return NextResponse.json(payload ?? {}, { status: res.status });
 }
