@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import SummaryStats from '@/components/SummaryStats';
 import StudentTable from '@/components/StudentTable';
 import DropoutList from '@/components/DropoutList';
@@ -17,132 +17,16 @@ import { mapApiStudentToStudent } from '@/lib/studentMapper';
 import StudentFormModal from '@/components/StudentFormModal';
 
 // 임시 더미 데이터 (나중에 API로 교체)
-const mockStudents: Student[] = [
-  {
-    id: '1',
-    name: '김현서(연무)',
-    fullName: '김현서',
-    gender: '여',
-    age: '2010년생',
-    course: '중등',
-    grade: '중3',
-    school: '연무중학교',
-    mentor: '곽민재',
-    roomGroup: '501호 01',
-    email: 'kim@example.com',
-    applicationProcess: '강화31기',
-    lectureHall: '1강의장',
-    group: '1조',
-  },
-  {
-    id: '2',
-    name: '정예진',
-    fullName: '정예진',
-    gender: '여',
-    age: '2010년생',
-    course: '중등',
-    grade: '중3',
-    school: '월촌중학교',
-    mentor: '곽민재',
-    roomGroup: '502호 01',
-    email: 'jung@example.com',
-    applicationProcess: '강화31기',
-    lectureHall: '1강의장',
-    group: '2조',
-  },
-  {
-    id: '3',
-    name: '손소현',
-    fullName: '손소현',
-    gender: '여',
-    age: '2010년생',
-    course: '중등',
-    grade: '중3',
-    school: '서산여자중학교',
-    mentor: '곽민재',
-    roomGroup: '503호 01',
-    email: 'son@example.com',
-    applicationProcess: '강화31기',
-    lectureHall: '2강의장',
-    group: '3조',
-  },
-  {
-    id: '4',
-    name: '김시아(대전)',
-    fullName: '김시아',
-    gender: '여',
-    age: '2008년생',
-    course: '고등',
-    grade: '고2',
-    school: '대전둔산여자고등학교',
-    mentor: '윤수연',
-    roomGroup: '605호 01',
-    email: 'kim2@example.com',
-    applicationProcess: '강화31기',
-    lectureHall: '5강의장',
-    group: '5조',
-  },
-  {
-    id: '5',
-    name: '신다정',
-    fullName: '신다정',
-    gender: '여',
-    age: '2008년생',
-    course: '고등',
-    grade: '고2',
-    school: '누원고등학교',
-    mentor: '윤수연',
-    roomGroup: '606호 01',
-    email: 'shin@example.com',
-    applicationProcess: '강화31기',
-    lectureHall: '6강의장',
-    group: '6조',
-  },
-];
-
 const mockDropouts: Dropout[] = [
-  {
-    id: '1',
-    name: '김가영',
-    grade: '중3',
-    gender: '여',
-    date: '7/23',
-    reason: '부적응',
-  },
-  {
-    id: '2',
-    name: '김현성',
-    grade: '고1',
-    gender: '남',
-    date: '7/25',
-    reason: '수두',
-  },
-  {
-    id: '3',
-    name: '임지호',
-    grade: '고2',
-    gender: '남',
-    date: '7/28',
-    reason: '유학',
-  },
+  { id: '1', name: '김가영', grade: '중3', gender: '여', date: '7/23', reason: '부적응' },
+  { id: '2', name: '김현성', grade: '고1', gender: '남', date: '7/25', reason: '수두' },
+  { id: '3', name: '임지호', grade: '고2', gender: '남', date: '7/28', reason: '유학' },
 ];
 
 const mockSameNames: SameNamePerson[] = [
-  {
-    id: '1',
-    name: '김현서',
-    location: '연무/쌍용',
-  },
-  {
-    id: '2',
-    name: '정수인',
-    location: '옥야/소사',
-  },
-  {
-    id: '3',
-    name: '김시아',
-    location: '송우/대전',
-  },
+  { id: '1', name: '김현서', location: '연무/쌍용' },
+  { id: '2', name: '정수인', location: '옥야/소사' },
+  { id: '3', name: '김시아', location: '송우/대전' },
 ];
 
 // 통계 계산 함수
@@ -150,7 +34,6 @@ const calculateStats = (students: Student[]): SummaryStatsType => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // 현재 외출/외박 중인 학생 수 계산
   const getAbsentCount = (studentList: Student[]) => {
     return studentList.filter((student) => {
       return (
@@ -175,7 +58,7 @@ const calculateStats = (students: Student[]): SummaryStatsType => {
     return {
       category: hall,
       subCategory: hall,
-      quota: 20, // 임시 값
+      quota: 20,
       assigned,
       present,
       absent,
@@ -193,7 +76,7 @@ const calculateStats = (students: Student[]): SummaryStatsType => {
     return {
       category: group,
       subCategory: group,
-      quota: 15, // 임시 값
+      quota: 15,
       assigned,
       present,
       absent,
@@ -207,16 +90,14 @@ const calculateStats = (students: Student[]): SummaryStatsType => {
     {
       gender: '남',
       byGrade: grades.map((grade) => {
-        const gradeStudents = students.filter(
-          (s) => s.gender === '남' && s.grade === grade
-        );
+        const gradeStudents = students.filter((s) => s.gender === '남' && s.grade === grade);
         const assigned = gradeStudents.length;
         const absent = getAbsentCount(gradeStudents);
         const present = assigned - absent;
         return {
           category: '남',
           subCategory: grade,
-          quota: 20, // 임시 값
+          quota: 20,
           assigned,
           present,
           absent,
@@ -227,16 +108,14 @@ const calculateStats = (students: Student[]): SummaryStatsType => {
     {
       gender: '여',
       byGrade: grades.map((grade) => {
-        const gradeStudents = students.filter(
-          (s) => s.gender === '여' && s.grade === grade
-        );
+        const gradeStudents = students.filter((s) => s.gender === '여' && s.grade === grade);
         const assigned = gradeStudents.length;
         const absent = getAbsentCount(gradeStudents);
         const present = assigned - absent;
         return {
           category: '여',
           subCategory: grade,
-          quota: 20, // 임시 값
+          quota: 20,
           assigned,
           present,
           absent,
@@ -266,22 +145,32 @@ export default function Home() {
   const [students, setStudents] = useState<Student[]>([]);
   const [dropouts, setDropouts] = useState<Dropout[]>([]);
   const [sameNames, setSameNames] = useState<SameNamePerson[]>([]);
-  const [summaryStats, setSummaryStats] = useState<SummaryStatsType | null>(
-    null
-  );
+  const [summaryStats, setSummaryStats] = useState<SummaryStatsType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [filters, setFilters] = useState<StudentFilters>({});
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
 
+  // ✅ 무한 호출 방지: 동일 값이면 state 업데이트를 막는다
+  const handleFiltersChange = useCallback((next: StudentFilters) => {
+    setFilters((prev) => {
+      // 깊은 비교(필터 키 수가 적어서 JSON stringify로 충분)
+      if (JSON.stringify(prev) === JSON.stringify(next)) return prev;
+      return next;
+    });
+  }, []);
+
   // 학생 목록 조회
-  const fetchStudents = async (currentFilters: StudentFilters) => {
+  const fetchStudents = useCallback(async (currentFilters: StudentFilters) => {
     try {
       setLoading(true);
       setError(null);
+
       const apiStudents = await studentApi.getStudents(currentFilters);
       const mappedStudents = apiStudents.map(mapApiStudentToStudent);
+
       setStudents(mappedStudents);
       setSummaryStats(calculateStats(mappedStudents));
     } catch (err) {
@@ -292,13 +181,12 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // 필터 변경 시 재조회
+  // ✅ filters 변경 시에만 재조회
   useEffect(() => {
     fetchStudents(filters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
+  }, [filters, fetchStudents]);
 
   // 초기 데이터 로드 (퇴소자, 동명이인은 임시로 유지)
   useEffect(() => {
@@ -308,10 +196,7 @@ export default function Home() {
 
   const handleStudentUpdate = (updatedStudent: Student) => {
     setStudents((prev) => {
-      const updated = prev.map((s) =>
-        s.id === updatedStudent.id ? updatedStudent : s
-      );
-      // 통계 재계산
+      const updated = prev.map((s) => (s.id === updatedStudent.id ? updatedStudent : s));
       setSummaryStats(calculateStats(updated));
       return updated;
     });
@@ -320,7 +205,7 @@ export default function Home() {
   // 학생 추가
   const handleAddStudent = async (data: any) => {
     await studentApi.createStudent(data);
-    await fetchStudents(filters); // 목록 새로고침
+    await fetchStudents(filters);
   };
 
   // 학생 수정
@@ -328,21 +213,18 @@ export default function Home() {
     if (!editingStudent) return;
     await studentApi.updateStudent(editingStudent.id, data);
     setEditingStudent(null);
-    await fetchStudents(filters); // 목록 새로고침
+    await fetchStudents(filters);
   };
 
   // 학생 삭제
   const handleDeleteStudent = async (student: Student) => {
-    if (!confirm(`${student.name} 학생을 삭제하시겠습니까?`)) {
-      return;
-    }
+    if (!confirm(`${student.name} 학생을 삭제하시겠습니까?`)) return;
 
     try {
       await studentApi.deleteStudent(student.id);
-      await fetchStudents(filters); // 목록 새로고침
+      await fetchStudents(filters);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : '삭제에 실패했습니다.';
+      const errorMessage = err instanceof Error ? err.message : '삭제에 실패했습니다.';
       alert(errorMessage);
     }
   };
@@ -366,18 +248,12 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
             기본DB
           </h1>
-          <p className="text-zinc-600 dark:text-zinc-400">
-            학생 데이터 관리 및 통계 대시보드
-          </p>
+          <p className="text-zinc-600 dark:text-zinc-400">학생 데이터 관리 및 통계 대시보드</p>
         </header>
 
         {/* 통계 요약 */}
         {summaryStats && (
-          <SummaryStats
-            stats={summaryStats}
-            students={students}
-            onStudentUpdate={handleStudentUpdate}
-          />
+          <SummaryStats stats={summaryStats} students={students} onStudentUpdate={handleStudentUpdate} />
         )}
 
         {/* 에러 메시지 */}
@@ -392,7 +268,7 @@ export default function Home() {
           <StudentTable
             students={students}
             filters={filters}
-            onFiltersChange={setFilters}
+            onFiltersChange={handleFiltersChange} // ✅ 여기만 바뀜 (setFilters 직접 전달 X)
             onAddClick={() => setIsAddModalOpen(true)}
             onEditClick={(student) => setEditingStudent(student)}
             onDeleteClick={handleDeleteStudent}
