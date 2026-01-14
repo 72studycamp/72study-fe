@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const BASE_URL = process.env.API_BASE_URL!;
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME!;
@@ -9,9 +9,13 @@ function basicAuthHeader() {
   return `Basic ${token}`;
 }
 
-export async function PATCH(req: Request, ctx: { params: { id: string } }) {
+type Ctx = { params: Promise<{ id: string }> };
+
+export async function PATCH(req: NextRequest, ctx: Ctx) {
+  const { id } = await ctx.params; // ✅ Next 16 타입 대응
   const body = await req.text();
-  const upstream = `${BASE_URL}/api/admin/students/${ctx.params.id}`;
+
+  const upstream = `${BASE_URL}/api/admin/students/${id}`;
 
   const res = await fetch(upstream, {
     method: 'PATCH',
@@ -22,12 +26,14 @@ export async function PATCH(req: Request, ctx: { params: { id: string } }) {
     body,
   });
 
-  // ✅ 204 No Content 대비
+  // ✅ 204/빈 바디 대비: 파싱 금지
   return new NextResponse(null, { status: res.status });
 }
 
-export async function DELETE(_: Request, ctx: { params: { id: string } }) {
-  const upstream = `${BASE_URL}/api/admin/students/${ctx.params.id}`;
+export async function DELETE(_req: NextRequest, ctx: Ctx) {
+  const { id } = await ctx.params;
+
+  const upstream = `${BASE_URL}/api/admin/students/${id}`;
 
   const res = await fetch(upstream, {
     method: 'DELETE',

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const BASE_URL = process.env.API_BASE_URL!;
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME!;
@@ -9,7 +9,7 @@ function basicAuthHeader() {
   return `Basic ${token}`;
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const qs = url.searchParams.toString();
   const upstream = `${BASE_URL}/api/admin/students${qs ? `?${qs}` : ''}`;
@@ -23,14 +23,15 @@ export async function GET(req: Request) {
   });
 
   const text = await res.text();
+
   return new NextResponse(text, {
     status: res.status,
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
   });
 }
 
-export async function POST(req: Request) {
-  const body = await req.text(); // 그대로 전달
+export async function POST(req: NextRequest) {
+  const body = await req.text();
   const upstream = `${BASE_URL}/api/admin/students`;
 
   const res = await fetch(upstream, {
@@ -42,6 +43,5 @@ export async function POST(req: Request) {
     body,
   });
 
-  // ✅ 201 Created + empty body 대비: json 파싱 금지
   return new NextResponse(null, { status: res.status });
 }
