@@ -1,72 +1,47 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
-export const runtime = "nodejs";
+const BASE_URL = process.env.API_BASE_URL!;
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME!;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD!;
 
-function getRequiredEnv(name: string) {
-  const v = process.env[name];
-  if (!v) throw new Error(`${name} 환경변수가 설정되지 않았습니다.`);
-  return v;
-}
-
-function buildBasicAuthHeader() {
-  const username = getRequiredEnv("ADMIN_USERNAME");
-  const password = getRequiredEnv("ADMIN_PASSWORD");
-  const token = Buffer.from(`${username}:${password}`).toString("base64");
+function basicAuthHeader() {
+  const token = Buffer.from(`${ADMIN_USERNAME}:${ADMIN_PASSWORD}`).toString('base64');
   return `Basic ${token}`;
 }
 
-function buildTargetUrl(req: Request) {
-  const base = getRequiredEnv("API_BASE_URL").replace(/\/$/, "");
+export async function GET(req: Request) {
   const url = new URL(req.url);
-  return `${base}/api/admin/students${url.search}`;
-}
+  const qs = url.searchParams.toString();
+  const upstream = `${BASE_URL}/api/admin/students${qs ? `?${qs}` : ''}`;
 
-async function proxy(req: Request) {
-  const targetUrl = buildTargetUrl(req);
-
-  const contentType = req.headers.get("content-type") ?? undefined;
-  const hasBody = !["GET", "HEAD"].includes(req.method);
-
-  const upstream = await fetch(targetUrl, {
-    method: req.method,
+  const res = await fetch(upstream, {
+    method: 'GET',
     headers: {
-      ...(contentType ? { "Content-Type": contentType } : {}),
-      Authorization: buildBasicAuthHeader(),
+      Authorization: basicAuthHeader(),
     },
-    body: hasBody ? await req.text() : undefined,
-    cache: "no-store",
+    cache: 'no-store',
   });
 
-  const bodyText = await upstream.text();
-  const res = new NextResponse(bodyText, { status: upstream.status });
-
-  const upstreamContentType =
-    upstream.headers.get("content-type") ?? "application/json; charset=utf-8";
-  res.headers.set("content-type", upstreamContentType);
-
-  return res;
-}
-
-export async function GET(req: Request) {
-  try {
-    return await proxy(req);
-  } catch (e) {
-    return NextResponse.json(
-      { message: e instanceof Error ? e.message : "프록시 오류" },
-      { status: 500 }
-    );
-  }
+  const text = await res.text();
+  return new NextResponse(text, {
+    status: res.status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+  });
 }
 
 export async function POST(req: Request) {
-  try {
-    return await proxy(req);
-  } catch (e) {
-    return NextResponse.json(
-      { message: e instanceof Error ? e.message : "프록시 오류" },
-      { status: 500 }
-    );
-  }
+  const body = await req.text(); // 그대로 전달
+  const upstream = `${BASE_URL}/api/admin/students`;
+
+  const res = await fetch(upstream, {
+    method: 'POST',
+    headers: {
+      Authorization: basicAuthHeader(),
+      'Content-Type': 'application/json',
+    },
+    body,
+  });
+
+  // ✅ 201 Created + empty body 대비: json 파싱 금지
+  return new NextResponse(null, { status: res.status });
 }
-
-
