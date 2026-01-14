@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   // 여기서는 env를 읽어도 되고(너 이미 설정했음),
   // 없으면 에러를 확실히 뱉게 해두자.
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const base = process.env.API_BASE_URL;
   if (!base) {
     return NextResponse.json({ message: "API base missing" }, { status: 500 });
   }

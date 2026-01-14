@@ -20,6 +20,8 @@ const menuItems: MenuItem[] = [
       { label: '조편성', href: '/students/groups' },
       { label: '방배정', href: '/students/rooms' },
       { label: '방이름표', href: '/students/room-tags' },
+      { label: '퇴소방이름표', href: '/students/dropout-room-tags' },
+      { label: '동명이인', href: '/students/same-names' },
     ],
   },
   {
@@ -58,8 +60,8 @@ const menuItems: MenuItem[] = [
     label: '기타 관리',
     href: '/others',
     subItems: [
-      { label: '택배관리', href: '/others/packages' },
       { label: '야간자습', href: '/others/night-study' },
+      { label: '택배관리', href: '/others/packages' },
       { label: '집중상담', href: '/others/counseling' },
       { label: '특강', href: '/others/special-lecture' },
       { label: '스피치', href: '/others/speech' },

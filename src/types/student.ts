@@ -64,3 +64,35 @@ export interface SummaryStats {
   }[]; // 성별별
 }
 
+// 백엔드 API 응답 타입
+export interface ApiStudent {
+  id: string;
+  campus?: string;
+  studentName: string;
+  gender: '남' | '여';
+  course: '중등' | '고등';
+  grade: string;
+  studentPhone?: string;
+  mentorName?: string | null;
+  roomNo?: string | null;
+  teamNo?: string | null;
+  status?: string;
+  adminMemo?: string | null;
+  birthDate?: string | null;
+  school?: string;
+  email?: string;
+  [key: string]: any; // 기타 필드
+}
+
+// Student 필터 타입
+export interface StudentFilters {
+  campus?: string;
+  status?: string;
+  teamNo?: string;
+  roomNo?: string;
+  grade?: string;
+  studentName?: string;
+  gender?: string;
+  course?: string;
+}
+
