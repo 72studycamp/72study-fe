@@ -90,7 +90,7 @@ export default function SummaryStats({
         </div>
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 rounded-xl p-6 border border-emerald-200 dark:border-emerald-800">
           <div className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2">
-            현재 출석
+            현인원
           </div>
           <div className="text-3xl font-bold text-emerald-900 dark:text-emerald-100">
             {stats.totalPresent}

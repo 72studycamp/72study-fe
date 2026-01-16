@@ -1,16 +1,17 @@
+// src/components/StudentTable.tsx
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { Student, StudentFilters } from '@/types/student';
-import { useState, useEffect } from 'react';
 
-interface StudentTableProps {
+type Props = {
   students: Student[];
   filters: StudentFilters;
   onFiltersChange: (filters: StudentFilters) => void;
-  onAddClick?: () => void;
-  onEditClick?: (student: Student) => void;
-  onDeleteClick?: (student: Student) => void;
-}
+  onAddClick: () => void;
+  onEditClick: (student: Student) => void;
+  onDeleteClick: (student: Student) => void;
+};
 
 export default function StudentTable({
   students,
@@ -19,312 +20,233 @@ export default function StudentTable({
   onAddClick,
   onEditClick,
   onDeleteClick,
-}: StudentTableProps) {
-  const [localSearchTerm, setLocalSearchTerm] = useState(filters.studentName || '');
+}: Props) {
+  const [searchTerm, setSearchTerm] = useState(filters.studentName || '');
 
-  // 검색어 디바운싱
+  // 입력값 local state -> 300ms 디바운스 후 filters 반영
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const t = setTimeout(() => {
       onFiltersChange({
         ...filters,
-        studentName: localSearchTerm || undefined,
+        studentName: searchTerm,
       });
     }, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
 
-    return () => clearTimeout(timer);
-  }, [localSearchTerm]);
+  // 외부에서 filters가 바뀌면 input도 동기화
+  useEffect(() => {
+    setSearchTerm(filters.studentName || '');
+  }, [filters.studentName]);
 
-  const uniqueGrades = Array.from(new Set(students.map((s) => s.grade))).sort();
-  const uniqueTeamNos = Array.from(
-    new Set(students.map((s) => s.group?.replace('조', '')).filter(Boolean))
-  ).sort((a, b) => parseInt(a || '0') - parseInt(b || '0'));
-  const uniqueRoomNos = Array.from(
-    new Set(students.map((s) => s.roomGroup.split('호')[0]).filter(Boolean))
-  ).sort();
+  const total = students.length;
+
+  // ✅ teamNo 목록 만들기
+  const uniqueTeams = useMemo(() => {
+    const s = new Set<string>();
+    students.forEach((x) => x.teamNo && s.add(x.teamNo));
+    return Array.from(s).sort();
+  }, [students]);
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-      <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-              학생 목록 ({students.length}명)
-            </h2>
-            {onAddClick && (
-              <button
-                onClick={onAddClick}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                학생 추가
-              </button>
-            )}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
-            <input
-              type="text"
-              placeholder="이름 검색..."
-              value={localSearchTerm}
-              onChange={(e) => setLocalSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            />
-            <select
-              value={filters.course || 'all'}
-              onChange={(e) =>
-                onFiltersChange({
-                  ...filters,
-                  course: e.target.value === 'all' ? undefined : e.target.value,
-                })
-              }
-              className="px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            >
-              <option value="all">전체 과정</option>
-              <option value="중등">중등</option>
-              <option value="고등">고등</option>
-            </select>
-            <select
-              value={filters.grade || 'all'}
-              onChange={(e) =>
-                onFiltersChange({
-                  ...filters,
-                  grade: e.target.value === 'all' ? undefined : e.target.value,
-                })
-              }
-              className="px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            >
-              <option value="all">전체 학년</option>
-              {uniqueGrades.map((grade) => (
-                <option key={grade} value={grade}>
-                  {grade}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filters.gender || 'all'}
-              onChange={(e) =>
-                onFiltersChange({
-                  ...filters,
-                  gender: e.target.value === 'all' ? undefined : e.target.value,
-                })
-              }
-              className="px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            >
-              <option value="all">전체 성별</option>
-              <option value="남">남</option>
-              <option value="여">여</option>
-            </select>
-            <select
-              value={filters.teamNo || 'all'}
-              onChange={(e) =>
-                onFiltersChange({
-                  ...filters,
-                  teamNo: e.target.value === 'all' ? undefined : e.target.value,
-                })
-              }
-              className="px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            >
-              <option value="all">전체 조</option>
-              {uniqueTeamNos.map((teamNo) => (
-                <option key={teamNo} value={teamNo}>
-                  {teamNo}조
-                </option>
-              ))}
-            </select>
-            <select
-              value={filters.roomNo || 'all'}
-              onChange={(e) =>
-                onFiltersChange({
-                  ...filters,
-                  roomNo: e.target.value === 'all' ? undefined : e.target.value,
-                })
-              }
-              className="px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            >
-              <option value="all">전체 방</option>
-              {uniqueRoomNos.map((roomNo) => (
-                <option key={roomNo} value={roomNo}>
-                  {roomNo}호
-                </option>
-              ))}
-            </select>
-            <select
-              value={filters.status || 'all'}
-              onChange={(e) =>
-                onFiltersChange({
-                  ...filters,
-                  status: e.target.value === 'all' ? undefined : e.target.value,
-                })
-              }
-              className="px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            >
-              <option value="all">전체 상태</option>
-              <option value="재원">재원</option>
-              <option value="퇴소">퇴소</option>
-            </select>
-          </div>
+    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800">
+      <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+          학생 목록 ({total}명)
+        </h2>
+        <button
+          onClick={onAddClick}
+          className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
+          type="button"
+        >
+          학생 추가
+        </button>
+      </div>
+
+      {/* 필터 */}
+      <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
+        <div className="flex flex-wrap gap-3">
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter 눌러도 submit/리로드 성격의 동작 막기
+              if (e.key === 'Enter') e.preventDefault();
+            }}
+            placeholder="이름 검색..."
+            className="h-11 w-56 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+          />
+
+          <select
+            className="h-11 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950"
+            value={filters.course || ''}
+            onChange={(e) =>
+              onFiltersChange({
+                ...filters,
+                course: e.target.value || undefined,
+              })
+            }
+          >
+            <option value="">전체 과정</option>
+            <option value="중등">중등</option>
+            <option value="고등">고등</option>
+          </select>
+
+          <select
+            className="h-11 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950"
+            value={filters.grade || ''}
+            onChange={(e) =>
+              onFiltersChange({
+                ...filters,
+                grade: e.target.value || undefined,
+              })
+            }
+          >
+            <option value="">전체 학년</option>
+            <option value="중3">중3</option>
+            <option value="고1">고1</option>
+            <option value="고2">고2</option>
+            <option value="고3">고3</option>
+          </select>
+
+          <select
+            className="h-11 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950"
+            value={filters.gender || ''}
+            onChange={(e) =>
+              onFiltersChange({
+                ...filters,
+                gender: e.target.value || undefined,
+              })
+            }
+          >
+            <option value="">전체 성별</option>
+            <option value="남">남</option>
+            <option value="여">여</option>
+          </select>
+
+          {/* ✅ group -> teamNo, 그리고 uniqueGroups -> uniqueTeams */}
+          <select
+            className="h-11 px-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950"
+            value={filters.teamNo || ''}
+            onChange={(e) =>
+              onFiltersChange({
+                ...filters,
+                teamNo: e.target.value || undefined,
+              })
+            }
+          >
+            <option value="">전체 조</option>
+            {uniqueTeams.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
+      {/* 테이블 */}
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-zinc-50 dark:bg-zinc-800">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                이름
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                성별
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                멘토
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                방호조
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                나이
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                과정
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                학년
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                학교
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                이메일
-              </th>
+          <thead className="bg-zinc-50 dark:bg-zinc-950/30">
+            <tr className="text-left text-sm text-zinc-600 dark:text-zinc-400">
+              <th className="px-6 py-4">이름</th>
+              <th className="px-6 py-4">성별</th>
+              <th className="px-6 py-4">멘토</th>
+              <th className="px-6 py-4">방호조</th>
+              <th className="px-6 py-4">나이</th>
+              <th className="px-6 py-4">과정</th>
+              <th className="px-6 py-4">학년</th>
+              <th className="px-6 py-4">학교</th>
+              <th className="px-6 py-4">이메일</th>
+              <th className="px-6 py-4 text-right">작업</th>
             </tr>
           </thead>
-          <thead className="bg-zinc-50 dark:bg-zinc-800">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                이름
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                성별
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                멘토
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                방호조
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                나이
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                과정
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                학년
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                학교
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                이메일
-              </th>
-              {(onEditClick || onDeleteClick) && (
-                <th className="px-6 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                  작업
-                </th>
-              )}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-700">
-            {students.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={onEditClick || onDeleteClick ? 10 : 9}
-                  className="px-6 py-12 text-center text-zinc-500 dark:text-zinc-400"
-                >
-                  검색 결과가 없습니다.
-                </td>
-              </tr>
-            ) : (
-              students.map((student) => (
-                <tr
-                  key={student.id}
-                  className="hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                  onClick={() => onEditClick?.(student)}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                      {student.name}
-                    </div>
-                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+
+          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            {students.map((student) => (
+              <tr
+                key={student.id}
+                className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
+              >
+                <td className="px-6 py-4">
+                  <div className="font-medium text-zinc-900 dark:text-zinc-100">
+                    {student.name}
+                  </div>
+                  {student.fullName && (
+                    <div className="text-sm text-zinc-500 dark:text-zinc-400">
                       {student.fullName}
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  )}
+                </td>
+
+                <td className="px-6 py-4">
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      student.gender === '남'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-pink-100 text-pink-700'
+                    }`}
+                  >
+                    {student.gender}
+                  </span>
+                </td>
+
+                <td className="px-6 py-4">{student.mentor || '-'}</td>
+                <td className="px-6 py-4">{student.roomGroup || '-'}</td>
+                <td className="px-6 py-4">{student.age || '-'}</td>
+
+                <td className="px-6 py-4">
+                  {student.course ? (
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        student.gender === '남'
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                          : 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200'
-                      }`}
-                    >
-                      {student.gender}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">
-                    {student.mentor || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
-                    {student.roomGroup || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
-                    {student.age || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      className={`px-3 py-1 rounded-full text-sm ${
                         student.course === '중등'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-purple-100 text-purple-700'
                       }`}
                     >
                       {student.course}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">
-                    {student.grade}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">
-                    {student.school || '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-600 dark:text-zinc-400">
-                    {student.email || '-'}
-                  </td>
-                  {(onEditClick || onDeleteClick) && (
-                    <td
-                      className="px-6 py-4 whitespace-nowrap text-center"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        {onEditClick && (
-                          <button
-                            onClick={() => onEditClick(student)}
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm"
-                          >
-                            수정
-                          </button>
-                        )}
-                        {onDeleteClick && (
-                          <button
-                            onClick={() => onDeleteClick(student)}
-                            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm"
-                          >
-                            삭제
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                  ) : (
+                    '-'
                   )}
-                </tr>
-              ))
+                </td>
+
+                <td className="px-6 py-4">{student.grade || '-'}</td>
+                <td className="px-6 py-4">{student.school || '-'}</td>
+                <td className="px-6 py-4">{student.email || '-'}</td>
+
+                <td className="px-6 py-4 text-right">
+                  <div className="flex items-center justify-end gap-3">
+                    <button
+                      onClick={() => onEditClick(student)}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                      type="button"
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={() => onDeleteClick(student)}
+                      className="text-red-600 hover:text-red-800 text-sm"
+                      type="button"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+
+            {students.length === 0 && (
+              <tr>
+                <td
+                  colSpan={10}
+                  className="px-6 py-10 text-center text-zinc-500 dark:text-zinc-400"
+                >
+                  학생이 없습니다.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -332,4 +254,3 @@ export default function StudentTable({
     </div>
   );
 }
-

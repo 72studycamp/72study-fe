@@ -1,114 +1,110 @@
-// API 호출 유틸리티
-// 클라이언트에서는 반드시 same-origin(/api/...)만 호출한다.
+import { ApiStudent, StudentFilters } from '@/types/student';
 
-class ApiClient {
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = endpoint;
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    };
+const DEFAULT_BASE_URL = 'http://localhost:3001';
 
+function buildQuery(params: Record<string, any>) {
+  const q = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v === undefined || v === null || v === '') return;
+    q.set(k, String(v));
+  });
+  return q.toString();
+}
+
+async function safeReadJson<T>(res: Response): Promise<T | null> {
+  // 204/205 는 바디가 없음
+  if (res.status === 204 || res.status === 205) return null;
+
+  const contentType = res.headers.get('content-type') || '';
+  const text = await res.text();
+
+  // 바디가 비어있으면 null
+  if (!text || text.trim().length === 0) return null;
+
+  // JSON 아닌 경우도 있을 수 있으니 방어
+  if (!contentType.includes('application/json')) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function readErrorMessage(res: Response): Promise<string> {
+  const contentType = res.headers.get('content-type') || '';
+  const text = await res.text().catch(() => '');
+
+  if (contentType.includes('application/json') && text) {
     try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({
-          message: `HTTP ${response.status}: ${response.statusText}`,
-        }));
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('알 수 없는 오류가 발생했습니다.');
+      const obj = JSON.parse(text);
+      if (obj?.message) return String(obj.message);
+      if (obj?.error) return String(obj.error);
+      if (obj?.path && obj?.status) return `HTTP ${obj.status} (${obj.path})`;
+    } catch {
+      // ignore
     }
   }
 
-  async get<T>(endpoint: string, params?: Record<string, string | null | undefined>): Promise<T> {
-    const queryString = params
-      ? '?' +
-        Object.entries(params)
-          .filter(([_, value]) => value !== null && value !== undefined && value !== 'all' && value !== '')
-          .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value!)}`)
-          .join('&')
-      : '';
-    
-    return this.request<T>(`${endpoint}${queryString}`, {
-      method: 'GET',
-    });
+  if (text && text.trim().length > 0) return text.slice(0, 300);
+  return `HTTP ${res.status} ${res.statusText}`;
+}
+
+class ApiClient {
+  private baseUrl: string;
+
+  constructor() {
+    this.baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_BASE_URL;
   }
 
-  async post<T>(endpoint: string, data: unknown): Promise<T> {
-    return this.request<T>(endpoint, {
+  private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    const url = path.startsWith('http') ? path : `${this.baseUrl}${path}`;
+
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const msg = await readErrorMessage(response);
+      throw new Error(msg);
+    }
+
+    const data = await safeReadJson<T>(response);
+    return data as unknown as T;
+  }
+
+  async getStudents(filters: StudentFilters = {}): Promise<ApiStudent[]> {
+    const query = buildQuery(filters as any);
+    const path = query ? `/api/admin/students?${query}` : `/api/admin/students`;
+    return this.request<ApiStudent[]>(path, { method: 'GET' });
+  }
+
+  async createStudent(data: any): Promise<any> {
+    return this.request<any>(`/api/admin/students`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async patch<T>(endpoint: string, data: unknown): Promise<T> {
-    return this.request<T>(endpoint, {
+  async updateStudent(id: string | number, data: any): Promise<any> {
+    return this.request<any>(`/api/admin/students/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
 
-  async delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, {
+  async deleteStudent(id: string | number): Promise<void> {
+    await this.request<void>(`/api/admin/students/${id}`, {
       method: 'DELETE',
     });
   }
 }
 
-export const apiClient = new ApiClient();
-
-// 학생 관련 API
-export const studentApi = {
-  // 학생 전체 조회
-  getStudents: (params?: {
-    campus?: string;
-    status?: string;
-    teamNo?: string;
-    roomNo?: string;
-    grade?: string;
-    studentName?: string;
-    gender?: string;
-    course?: string;
-  }) => apiClient.get<any[]>('/api/admin/students', params),
-
-  // 학생 추가
-  createStudent: (data: {
-    campus: string;
-    studentName: string;
-    gender: string;
-    course: string;
-    grade: string;
-    studentPhone?: string | null;
-    mentorName?: string | null;
-    roomNo?: string | null;
-    teamNo?: string | null;
-    birthDate?: string | null;
-  }) => apiClient.post<any>('/api/admin/students', data),
-
-  // 학생 정보 수정
-  updateStudent: (id: string, data: {
-    status?: string;
-    mentorName?: string | null;
-    roomNo?: string | null;
-    teamNo?: string | null;
-    adminMemo?: string | null;
-  }) => apiClient.patch<any>(`/api/admin/students/${id}`, data),
-
-  // 학생 삭제
-  deleteStudent: (id: string) => apiClient.delete<any>(`/api/admin/students/${id}`),
-};
+export const studentApi = new ApiClient();
