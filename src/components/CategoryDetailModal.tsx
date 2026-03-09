@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Student, Absence } from '@/types/student';
 
 interface CategoryDetailModalProps {
@@ -28,6 +28,17 @@ export default function CategoryDetailModal({
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [note, setNote] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -69,22 +80,22 @@ export default function CategoryDetailModal({
   const absentStudents = students.filter((s) => getStudentStatus(s));
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="modal-overlay-enter fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/50 p-3 backdrop-blur-sm md:p-6">
+      <div className="modal-panel-enter w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl flex flex-col">
         {/* 헤더 */}
-        <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
+        <div className="px-6 py-5 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+            <h2 className="text-xl font-bold text-zinc-900">
               {title} - {subTitle}
             </h2>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+            <p className="text-sm text-zinc-600 mt-1">
               총 {students.length}명 (출석: {presentStudents.length}명, 외출/외박:{' '}
               {absentStudents.length}명)
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+            className="rounded-full p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-700"
           >
             <svg
               className="w-6 h-6"
@@ -103,23 +114,23 @@ export default function CategoryDetailModal({
         </div>
 
         {/* 탭 */}
-        <div className="px-6 py-2 border-b border-zinc-200 dark:border-zinc-700 flex gap-4">
+        <div className="px-6 py-3 border-b border-zinc-200 flex gap-2 bg-white">
           <button
             onClick={() => setShowAbsenceForm(false)}
-            className={`px-4 py-2 text-sm font-medium ${
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
               !showAbsenceForm
-                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                : 'text-zinc-600 dark:text-zinc-400'
+                ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+                : 'text-zinc-600 hover:bg-zinc-50'
             }`}
           >
             학생 목록
           </button>
           <button
             onClick={() => setShowAbsenceForm(true)}
-            className={`px-4 py-2 text-sm font-medium ${
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
               showAbsenceForm
-                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                : 'text-zinc-600 dark:text-zinc-400'
+                ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+                : 'text-zinc-600 hover:bg-zinc-50'
             }`}
           >
             외출/외박 등록
@@ -140,7 +151,7 @@ export default function CategoryDetailModal({
                     const student = students.find((s) => s.id === e.target.value);
                     setSelectedStudent(student || null);
                   }}
-                  className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100"
                 >
                   <option value="">학생을 선택하세요</option>
                   {students.map((student) => (
@@ -154,7 +165,7 @@ export default function CategoryDetailModal({
               {selectedStudent && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    <label className="block text-sm font-medium text-zinc-700 mb-2">
                       유형
                     </label>
                     <select
@@ -162,7 +173,7 @@ export default function CategoryDetailModal({
                       onChange={(e) =>
                         setAbsenceType(e.target.value as '외출' | '외박')
                       }
-                      className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100"
                     >
                       <option value="외출">외출</option>
                       <option value="외박">외박</option>
@@ -171,31 +182,31 @@ export default function CategoryDetailModal({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                      <label className="block text-sm font-medium text-zinc-700 mb-2">
                         시작일
                       </label>
                       <input
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
-                        className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                      <label className="block text-sm font-medium text-zinc-700 mb-2">
                         종료일
                       </label>
                       <input
                         type="date"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
-                        className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+                        className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                    <label className="block text-sm font-medium text-zinc-700 mb-2">
                       비고
                     </label>
                     <input
@@ -203,14 +214,14 @@ export default function CategoryDetailModal({
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                       placeholder="예: 졸업식 외박, 오후 3시 복귀 예정"
-                      className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-100"
                     />
                   </div>
 
                   <button
                     onClick={handleAddAbsence}
                     disabled={!startDate || !endDate}
-                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-zinc-400 disabled:cursor-not-allowed"
+                    className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-blue-200 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     등록
                   </button>
@@ -221,19 +232,19 @@ export default function CategoryDetailModal({
             <div className="space-y-6">
               {/* 출석 학생 */}
               <div>
-                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+                <h3 className="text-lg font-semibold text-zinc-900 mb-4">
                   출석 학생 ({presentStudents.length}명)
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {presentStudents.map((student) => (
                     <div
                       key={student.id}
-                      className="p-3 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                      className="rounded-xl border border-zinc-200 bg-white p-3 shadow-sm transition hover:bg-zinc-50"
                     >
-                      <div className="font-medium text-zinc-900 dark:text-zinc-100">
+                      <div className="font-medium text-zinc-900">
                         {student.name}
                       </div>
-                      <div className="text-sm text-zinc-600 dark:text-zinc-400">
+                      <div className="text-sm text-zinc-600">
                         {student.grade} · {student.school}
                       </div>
                     </div>
@@ -244,7 +255,7 @@ export default function CategoryDetailModal({
               {/* 외출/외박 학생 */}
               {absentStudents.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+                  <h3 className="text-lg font-semibold text-zinc-900 mb-4">
                     외출/외박 학생 ({absentStudents.length}명)
                   </h3>
                   <div className="space-y-3">
@@ -253,22 +264,22 @@ export default function CategoryDetailModal({
                       return (
                         <div
                           key={student.id}
-                          className="p-4 border border-orange-200 dark:border-orange-800 rounded-lg bg-orange-50 dark:bg-orange-950"
+                          className="p-4 border border-amber-200 rounded-xl bg-amber-50"
                         >
                           <div className="flex items-start justify-between">
                             <div>
-                              <div className="font-medium text-zinc-900 dark:text-zinc-100">
+                              <div className="font-medium text-zinc-900">
                                 {student.name}
                               </div>
-                              <div className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
+                              <div className="text-sm text-zinc-600 mt-1">
                                 {student.grade} · {student.school}
                               </div>
                               {absence && (
                                 <div className="mt-2 text-sm">
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 mr-2">
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 mr-2">
                                     {absence.type}
                                   </span>
-                                  <span className="text-zinc-600 dark:text-zinc-400">
+                                  <span className="text-zinc-600">
                                     {new Date(absence.startDate).toLocaleDateString(
                                       'ko-KR'
                                     )}{' '}
@@ -278,7 +289,7 @@ export default function CategoryDetailModal({
                                     )}
                                   </span>
                                   {absence.note && (
-                                    <div className="mt-1 text-zinc-700 dark:text-zinc-300">
+                                    <div className="mt-1 text-zinc-700">
                                       비고: {absence.note}
                                     </div>
                                   )}
@@ -290,7 +301,7 @@ export default function CategoryDetailModal({
                                 onClick={() =>
                                   onAbsenceRemove(student.id, absence.id)
                                 }
-                                className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm"
+                                className="text-sm text-red-600 transition hover:text-red-700"
                               >
                                 삭제
                               </button>
@@ -309,4 +320,3 @@ export default function CategoryDetailModal({
     </div>
   );
 }
-

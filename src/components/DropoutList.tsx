@@ -4,9 +4,10 @@ import { Dropout } from '@/types/student';
 
 interface DropoutListProps {
   dropouts: Dropout[];
+  onRowClick?: (dropout: Dropout) => void;
 }
 
-export default function DropoutList({ dropouts }: DropoutListProps) {
+export default function DropoutList({ dropouts, onRowClick }: DropoutListProps) {
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
       <div className="px-6 py-4 bg-zinc-50 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
@@ -49,7 +50,12 @@ export default function DropoutList({ dropouts }: DropoutListProps) {
               dropouts.map((dropout) => (
                 <tr
                   key={dropout.id}
-                  className="hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                  className={`transition-colors ${
+                    onRowClick
+                      ? 'cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                      : 'hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                  }`}
+                  onClick={() => onRowClick?.(dropout)}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-zinc-900 dark:text-zinc-100">
                     {dropout.name}

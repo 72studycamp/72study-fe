@@ -1,52 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { CategoryStats, Student } from '@/types/student';
+import { CategoryStats } from '@/types/student';
 
 interface CategoryStatsProps {
   title: string;
   stats: CategoryStats[];
-  students: Student[];
   onCategoryClick?: (category: string, subCategory: string) => void;
 }
 
 export default function CategoryStatsTable({
   title,
   stats,
-  students,
   onCategoryClick,
 }: CategoryStatsProps) {
-  const [expanded, setExpanded] = useState(true);
-
-  const getAbsentStudents = (category: string, subCategory: string) => {
-    return students.filter((student) => {
-      let matchesCategory = false;
-      
-      if (title === '강의장') {
-        matchesCategory = student.lectureHall === subCategory;
-      } else if (title === '조') {
-        matchesCategory = student.group === subCategory;
-      } else if (title === '성별') {
-        matchesCategory = student.gender === category && student.grade === subCategory;
-      }
-
-      if (!matchesCategory) return false;
-
-      // 오늘 날짜 기준으로 외출/외박 중인 학생 필터링
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      return (
-        student.absences?.some((absence) => {
-          const startDate = new Date(absence.startDate);
-          const endDate = new Date(absence.endDate);
-          startDate.setHours(0, 0, 0, 0);
-          endDate.setHours(0, 0, 0, 0);
-          return today >= startDate && today <= endDate;
-        }) || false
-      );
-    });
-  };
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
@@ -103,10 +71,6 @@ export default function CategoryStatsTable({
                 </tr>
               ) : (
                 stats.map((item, index) => {
-                  const absentStudents = getAbsentStudents(
-                    item.category,
-                    item.subCategory
-                  );
                   return (
                     <tr
                       key={index}
@@ -168,4 +132,3 @@ export default function CategoryStatsTable({
     </div>
   );
 }
-

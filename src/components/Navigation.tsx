@@ -15,13 +15,13 @@ const menuItems: MenuItem[] = [
     label: '학생 관리',
     href: '/students',
     subItems: [
-      { label: '기본DB', href: '/students/basic' },
+      { label: '원본 DB', href: '/students/basic' },
       { label: '좌석배치', href: '/students/seating' },
       { label: '조편성', href: '/students/groups' },
-      { label: '방배정', href: '/students/rooms' },
+      { label: '접수철', href: '/students/reception' },
+      { label: '방배정', href: '/others/room-assignment' },
       { label: '방이름표', href: '/students/room-tags' },
       { label: '퇴소방이름표', href: '/students/dropout-room-tags' },
-      { label: '동명이인', href: '/students/same-names' },
     ],
   },
   {
@@ -61,8 +61,9 @@ const menuItems: MenuItem[] = [
     href: '/others',
     subItems: [
       { label: '야간자습', href: '/others/night-study' },
-      { label: '택배관리', href: '/others/packages' },
+      { label: '택배관리', href: '/others/parcel' },
       { label: '집중상담', href: '/others/counseling' },
+      { label: '건강관리', href: '/others/health' },
       { label: '특강', href: '/others/special-lecture' },
       { label: '스피치', href: '/others/speech' },
       { label: '층별배치', href: '/others/floor-assignment' },
@@ -79,7 +80,7 @@ export default function Navigation() {
   const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
 
   return (
-    <nav className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 sticky top-1 z-50 shadow-sm">
+    <nav className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-3 max-w-7xl">
         <div className="flex items-center justify-between h-16">
           {/* 로고 영역 */}
@@ -110,7 +111,7 @@ export default function Navigation() {
               >
                 <Link
                   href={item.href}
-                  className={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                  className={`px-4 py-2 text-base font-medium transition-colors relative ${
                     hoveredMenu === item.label
                       ? 'text-blue-600 dark:text-blue-400'
                       : 'text-zinc-700 dark:text-zinc-300 hover:text-blue-600 dark:hover:text-blue-400'
@@ -178,4 +179,3 @@ export default function Navigation() {
     </nav>
   );
 }
-
