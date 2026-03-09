@@ -42,6 +42,7 @@ export interface Student {
   adminMemo?: string | null;
   birthDate?: string | null;
   studentPhone?: string | null;
+  dropoutDate?: string | null;
 
   absences?: Absence[]; // 외출/외박 기록
 }
@@ -76,6 +77,7 @@ export interface SummaryStats {
   totalAssigned: number;
   totalPresent: number;
   totalAbsent: number;
+  totalDropped: number;
   difference: number;
   byLectureHall: CategoryStats[];
   byGroup: CategoryStats[];
@@ -104,9 +106,19 @@ export interface ApiStudent {
 
   roomNo?: string | null;
   teamNo?: string | null;
+  lectureHall?: string | null;
+  classRoom?: string | null;
 
   adminMemo?: string | null;
   birthDate?: string | null;
+  dropoutDate?: string | null;
+  absences?: Array<{
+    id: string | number;
+    type: '외출' | '외박' | 'OUTING' | 'OVERNIGHT';
+    startDate: string;
+    endDate: string;
+    note?: string | null;
+  }>;
 
   school?: string;
   email?: string;

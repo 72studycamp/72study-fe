@@ -1,4 +1,4 @@
-// src/app/api/admin/students/[id]/route.ts
+// src/app/api/admin/students/health-logs/[logId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +8,7 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 type Context = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ logId: string }>;
 };
 
 function authHeader() {
@@ -36,16 +36,9 @@ async function proxy(req: NextRequest, url: string) {
   };
   if (auth) headers.Authorization = auth;
 
-  const isBodyMethod = req.method !== 'GET' && req.method !== 'HEAD';
-  const body = isBodyMethod ? await req.text() : undefined;
-
   const res = await fetch(url, {
     method: req.method,
-    headers: {
-      ...headers,
-      ...(isBodyMethod ? { 'Content-Type': 'application/json' } : {}),
-    },
-    body,
+    headers,
     cache: 'no-store',
   });
 
@@ -67,29 +60,14 @@ async function proxy(req: NextRequest, url: string) {
   return new NextResponse(text, { status: res.status });
 }
 
-export async function GET(req: NextRequest, context: Context) {
-  const envError = requireEnv();
-  if (envError) return envError;
-
-  const { id } = await context.params;
-  const target = `${API_BASE_URL}/api/admin/students/${id}`;
-  return proxy(req, target);
-}
-
-export async function PATCH(req: NextRequest, context: Context) {
-  const envError = requireEnv();
-  if (envError) return envError;
-
-  const { id } = await context.params;
-  const target = `${API_BASE_URL}/api/admin/students/${id}`;
-  return proxy(req, target);
-}
-
 export async function DELETE(req: NextRequest, context: Context) {
   const envError = requireEnv();
   if (envError) return envError;
 
-  const { id } = await context.params;
-  const target = `${API_BASE_URL}/api/admin/students/${id}`;
+  const { logId } = await context.params;
+  const url = new URL(req.url);
+  const query = url.search ? url.search : '';
+  const target = `${API_BASE_URL}/api/admin/students/health-logs/${logId}${query}`;
+
   return proxy(req, target);
 }

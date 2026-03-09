@@ -1,4 +1,3 @@
-// src/app/api/admin/students/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -11,9 +10,7 @@ const LOCAL_FALLBACK_BASE_URL = 'http://localhost:8080';
 
 function authHeader() {
   if (!ADMIN_USERNAME || !ADMIN_PASSWORD) return '';
-  const token = Buffer.from(`${ADMIN_USERNAME}:${ADMIN_PASSWORD}`).toString(
-    'base64'
-  );
+  const token = Buffer.from(`${ADMIN_USERNAME}:${ADMIN_PASSWORD}`).toString('base64');
   return `Basic ${token}`;
 }
 
@@ -35,39 +32,21 @@ async function proxy(req: NextRequest, url: string) {
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
-
   if (auth) headers.Authorization = auth;
-
-  // POST 바디 전달
-  const isBodyMethod = req.method !== 'GET' && req.method !== 'HEAD';
-  const body = isBodyMethod ? await req.text() : undefined;
 
   const res = await fetch(url, {
     method: req.method,
-    headers: {
-      ...headers,
-      ...(isBodyMethod ? { 'Content-Type': 'application/json' } : {}),
-    },
-    body,
+    headers,
     cache: 'no-store',
   });
 
   const contentType = res.headers.get('content-type') || '';
-
-  // 204 처리는 그대로 반환
-  if (res.status === 204 || res.status === 205) {
-    return new NextResponse(null, { status: res.status });
-  }
-
-  // JSON이면 text로 받아 그대로 전달(빈 바디 방어)
   const text = await res.text();
 
   if (contentType.includes('application/json')) {
     return new NextResponse(text || 'null', {
       status: res.status,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
@@ -81,10 +60,7 @@ function resolveBaseUrls(): string[] {
   return [...new Set(ordered)];
 }
 
-async function proxyWithFallback(
-  req: NextRequest,
-  pathWithQuery: string
-) {
+async function proxyWithFallback(req: NextRequest, path: string) {
   const baseUrls = resolveBaseUrls();
   if (baseUrls.length === 0) {
     return NextResponse.json(
@@ -97,7 +73,7 @@ async function proxyWithFallback(
 
   for (const baseUrl of baseUrls) {
     try {
-      return await proxy(req, `${baseUrl}${pathWithQuery}`);
+      return await proxy(req, `${baseUrl}${path}`);
     } catch (e) {
       lastError = e;
     }
@@ -106,7 +82,7 @@ async function proxyWithFallback(
   const detail = lastError instanceof Error ? lastError.message : 'unknown';
   return NextResponse.json(
     {
-      message: '학생 API 프록시 연결 실패',
+      message: '학생 원본데이터 API 프록시 연결 실패',
       attemptedBaseUrls: baseUrls,
       detail,
     },
@@ -118,14 +94,5 @@ export async function GET(req: NextRequest) {
   const envError = requireEnv();
   if (envError) return envError;
 
-  const url = new URL(req.url);
-  const query = url.search ? url.search : '';
-  return proxyWithFallback(req, `/api/admin/students${query}`);
-}
-
-export async function POST(req: NextRequest) {
-  const envError = requireEnv();
-  if (envError) return envError;
-
-  return proxyWithFallback(req, `/api/admin/students`);
+  return proxyWithFallback(req, '/api/admin/students/raw');
 }

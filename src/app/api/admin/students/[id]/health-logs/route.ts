@@ -1,4 +1,4 @@
-// src/app/api/admin/students/[id]/route.ts
+// src/app/api/admin/students/[id]/health-logs/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -72,24 +72,17 @@ export async function GET(req: NextRequest, context: Context) {
   if (envError) return envError;
 
   const { id } = await context.params;
-  const target = `${API_BASE_URL}/api/admin/students/${id}`;
+  const url = new URL(req.url);
+  const query = url.search ? url.search : '';
+  const target = `${API_BASE_URL}/api/admin/students/${id}/health-logs${query}`;
   return proxy(req, target);
 }
 
-export async function PATCH(req: NextRequest, context: Context) {
+export async function POST(req: NextRequest, context: Context) {
   const envError = requireEnv();
   if (envError) return envError;
 
   const { id } = await context.params;
-  const target = `${API_BASE_URL}/api/admin/students/${id}`;
-  return proxy(req, target);
-}
-
-export async function DELETE(req: NextRequest, context: Context) {
-  const envError = requireEnv();
-  if (envError) return envError;
-
-  const { id } = await context.params;
-  const target = `${API_BASE_URL}/api/admin/students/${id}`;
+  const target = `${API_BASE_URL}/api/admin/students/${id}/health-logs`;
   return proxy(req, target);
 }

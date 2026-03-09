@@ -1,4 +1,4 @@
-// src/app/api/admin/students/[id]/route.ts
+// src/app/api/admin/parcels/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -72,7 +72,8 @@ export async function GET(req: NextRequest, context: Context) {
   if (envError) return envError;
 
   const { id } = await context.params;
-  const target = `${API_BASE_URL}/api/admin/students/${id}`;
+  // ✅ 백엔드는 /api/parcels/{parcelId} (admin 없음)
+  const target = `${API_BASE_URL}/api/parcels/${id}`;
   return proxy(req, target);
 }
 
@@ -81,7 +82,8 @@ export async function PATCH(req: NextRequest, context: Context) {
   if (envError) return envError;
 
   const { id } = await context.params;
-  const target = `${API_BASE_URL}/api/admin/students/${id}`;
+  // ✅ 백엔드는 /api/parcels/{parcelId} (admin 없음)
+  const target = `${API_BASE_URL}/api/parcels/${id}`;
   return proxy(req, target);
 }
 
@@ -90,6 +92,8 @@ export async function DELETE(req: NextRequest, context: Context) {
   if (envError) return envError;
 
   const { id } = await context.params;
-  const target = `${API_BASE_URL}/api/admin/students/${id}`;
+  // ✅ 백엔드는 /api/parcels/{parcelId} (admin 없음)
+  const target = `${API_BASE_URL}/api/parcels/${id}`;
   return proxy(req, target);
 }
+
