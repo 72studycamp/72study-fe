@@ -172,7 +172,7 @@ export default function MentorInfoPage() {
     return mentorRows.filter((row) => row.mentorName.toLowerCase().includes(q));
   }, [mentorRows, query]);
 
-  const tableRows = useMemo(() => {
+  const tableRows = useMemo<Array<{ mentorName: string; data: MentorProfile }>>(() => {
     return filtered.map((row) => {
       const profile = effectiveProfiles[row.mentorName] ?? EMPTY_PROFILE;
       return {
@@ -181,7 +181,7 @@ export default function MentorInfoPage() {
           ...profile,
           name: row.mentorName,
           team: profile.team || row.teams[0] || '-',
-        },
+        } as MentorProfile,
       };
     });
   }, [effectiveProfiles, filtered]);
